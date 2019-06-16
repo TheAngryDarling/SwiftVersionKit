@@ -12,7 +12,7 @@ final class VersionKitTests: XCTestCase {
         return rtn
     }()
     
-    let printResults = VersionTests.VERBOSE
+    let printResults = VersionKitTests.VERBOSE
     
     func testVersions() {
         let versions: [String] = ["1.0","1.0.1","1.0-R12A","1.0.1-R12A","1.0.1-R12A-ABCD+ASDF+RX2A"]
@@ -41,7 +41,7 @@ final class VersionKitTests: XCTestCase {
         }()
         
         if printResults { print("\nTesting multi version format") }
-        for (_, v) in multienumerated() {
+        for (_, v) in multiVersions.enumerated() {
             guard let ef = Version(v) else {
                 XCTFail("Failed to parse version '\(v)'")
                 continue
@@ -91,7 +91,7 @@ final class VersionKitTests: XCTestCase {
         }()
         
         if printResults { print("\nTesting multi named version format") }
-        for (_, v) in multienumerated() {
+        for (_, v) in multiVersions.enumerated() {
             //if i > 0 { break }
             guard let ef = NamedVersion(v) else {
                 XCTFail("Failed to parse version '\(v)'")
