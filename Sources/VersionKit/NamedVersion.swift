@@ -19,67 +19,56 @@ public typealias LibraryVersion = NamedVersion
 public typealias PackageVersion = NamedVersion
 
 
-/**
- Storage for named version values
-    - single: Stores a single instance of a named version
-    - compound: Stores an array of named versions
- */
+
+/// Storage for named version values
+///    - single: Stores a single instance of a named version
+///    - compound: Stores an array of named versions
 public enum NamedVersion {
     
-    /**
-     Single instance of a named version.
-    */
+    /// Single instance of a named version.
     public struct SingleVersion {
-        //Name of object (eg. Program, Library)
+        /// Name of object (eg. Program, Library)
         public let name: String
-        //Version of object
+        /// Version of object
         public let version: Version
     }
     
-    // Regular Expression for checking for a single named version
+    /// Regular Expression for checking for a single named version
     public static let SINGLE_VERSION_REGEX: String = "(\\w+(\\s\\w+)*)\\s+(" + Version.COMPOUND_VERSION_REGEX + ")"
-    // Regular Expression for checking for compound named versions
+    /// Regular Expression for checking for compound named versions
     public static let COMPOUND_VERSION_REGEX: String = "(" + SINGLE_VERSION_REGEX + ")(?:\\s+\\+\\s+(\(SINGLE_VERSION_REGEX)))*"
     
-    // Indicates the group locaton within the regular expression for the name of the named version on a single version regex
+    /// Indicates the group locaton within the regular expression for the name of the named version on a single version regex
     private static let NAME_VALUE_RANGE_INDEX: Int = 1
-    // Indicates the group locaton within the regular expression for the version of the named version on a single version regex
+    /// Indicates the group locaton within the regular expression for the version of the named version on a single version regex
     private static let VERSION_VALUE_RANGE_INDEX: Int = 3
     
-    // Single instance of named version
+    /// Single instance of named version
     case single(SingleVersion)
-    // Compound group of named version
+    /// Compound group of named version
     case compound([SingleVersion])
     
-    /***
-     @brief If the current version is a compound version, this method will sort the versions and save the new order
-     */
+    /// If the current version is a compound version, this method will sort the versions and save the new order
     public mutating func sort() {
         guard case let NamedVersion.compound(ary) = self else { return }
         let sA = ary.sorted()
         self = .compound(sA)
     }
     
-    /**
-     @brief Copies the current version, sorts if its a compound version and returns the new version
-     */
+    /// Copies the current version, sorts if its a compound version and returns the new version
     public func sorted() -> NamedVersion {
         guard case let NamedVersion.compound(ary) = self else { return self }
         let sA = ary.sorted()
         return .compound(sA)
     }
     
-    /**
-     @brief Indicates if this is a single version or a compound version
-     */
+    /// Indicates if this is a single version or a compound version
     public var isSingleVersion: Bool {
         if case NamedVersion.single = self { return true }
         else { return false }
     }
     
-    /**
-     @brief Returns an array of all versions stored in this instance.  If this is a single version the array contains one element, else will return all elements in the compound form
-     */
+    /// Returns an array of all versions stored in this instance.  If this is a single version the array contains one element, else will return all elements in the compound form
     public var versions: [SingleVersion] {
         var rtn: [SingleVersion] = []
         
@@ -92,20 +81,17 @@ public enum NamedVersion {
         return rtn
     }
     
-    /**
-     @brief If this is a single version, return the SingleVersion object
-     */
+    /// If this is a single version, return the SingleVersion object
     public var singleVersion: SingleVersion? {
         guard case NamedVersion.single(let v) = self else { return nil }
         return v
     }
     
-    /**
-     @brief Find and returns a version with the matching name
-     @param withName The name of the version to find
-     
-     @return Returns a single version if one is found, otherwise return nil
-    */
+    /// Find and returns a version with the matching name
+    ///
+    /// - parameter name: The name of the version to find
+    ///
+    /// - returns: A single version if one is found, otherwise return nil
     func getVersion(withName name: String) -> SingleVersion? {
        
         for v in self.versions {
@@ -117,44 +103,39 @@ public enum NamedVersion {
         return nil
     }
     
-    /**
-     @brief Checks to see if a version with a specific name exists
-     @param withName The name of the version to find
-     
-     @return Returns true if a version is found otherwise false
-     */
+    /// Checks to see if a version with a specific name exists
+     /// - parameter name: The name of the version to find
+     ///
+     /// - returns: A single version if one is found, otherwise return nil
     public func contains(versionWithName name: String) -> Bool {
         return (self.getVersion(withName: name) != nil)
     }
     
-    /**
-     @brief Checks to see if a version with a specific name and major version exists
-     @param versionWithName The name of the version to find
-     @param havingMajorVersion The major value to compare to.
-     
-     @return Returns true if a version is found otherwise false
-     */
+
+    /// Checks to see if a version with a specific name and major version exists
+    ///
+    /// - Parameters:
+    ///   - name: he name of the version to find
+    ///   - major: The major value to compare to.
+    /// - Returns: true if a version is found otherwise false
     public func contains(versionWithName name: String, havingMajorVersion major: UInt) -> Bool {
         guard let p = self.getVersion(withName: name) else { return false }
         return (p.version.major == major)
     }
     
-    /**
-     @brief Checks to see if the given version resides within this instance
-     @param version The version to look for
-     
-     @return Returns true if a version is found otherwise false
-    */
+
+    /// Checks to see if the given version resides within this instance
+    ///
+    /// - Parameter version: The version to look for
+    /// - Returns: true if a version is found otherwise false
     public func contains(_ version: NamedVersion.SingleVersion) -> Bool {
         return self.versions.contains(version)
     }
     
-    /**
-     @brief Checks to see if the given version resides within this instance
-     @param version The version to look for
-     
-     @return Returns true if a version is found otherwise false
-     */
+    /// Checks to see if the given version resides within this instance
+    ///
+    /// - Parameter version: The version to look for
+    /// - Returns: true if a version is found otherwise false
     public func contains(_ version: NamedVersion) -> Bool {
         var rtn: Bool = true
         let lhsVersions = self.versions
@@ -170,23 +151,23 @@ public enum NamedVersion {
 
 // MARK: init
 public extension NamedVersion {
-    // Creates a new instance of single NamedVersion with a single version
+    /// Creates a new instance of single NamedVersion with a single version
     public init(_ version: SingleVersion) {
         self = .single(version)
     }
     
-    // Creates a new instance of a single NamedVersion with a the name and version
+    /// Creates a new instance of a single NamedVersion with a the name and version
     public init(name: String, version: Version) {
         self.init(SingleVersion(name: name, version: version))
     }
     
-    // Creates a new instance of a single NamedVersion with a the name and versions
+    /// Creates a new instance of a single NamedVersion with a the name and versions
     public init(name: String, versions: Version...) {
         precondition(versions.count > 0, "Atleast one versions must be provided")
         self.init(SingleVersion(name: name, version: Version(versions)))
     }
     
-    // Creates a new instance of a single NamedVersion with a the name and version information
+    /// Creates a new instance of a single NamedVersion with a the name and version information
     public init(name: String, major: UInt, minor: UInt, revision: UInt?, prerelease: [String], build: [String]) {
         self.init(name: name,
                   version: Version(major: major,
@@ -196,24 +177,23 @@ public extension NamedVersion {
                                    build: build))
     }
     
-    // Creates a new instane of a compound NamedVersion with the versions provided
+    /// Creates a new instane of a compound NamedVersion with the versions provided
     public init(_ versions: [NamedVersion.SingleVersion]) {
         precondition(versions.count > 0, "Atleast one versions must be provided")
         self = .compound(versions)
     }
     
-    // Creates a new instane of a compound NamedVersion with the versions provided
+    /// Creates a new instane of a compound NamedVersion with the versions provided
     public init(_ versions: NamedVersion.SingleVersion...) { self.init(versions) }
-    // Creates a new instane of a compound NamedVersion with the versions provided
+    /// Creates a new instane of a compound NamedVersion with the versions provided
     public init(_ versions: [NamedVersion]) { self.init( versions.flatMap( { $0.versions }) ) }
-    // Creates a new instane of a compound NamedVersion with the versions provided
+    /// Creates a new instane of a compound NamedVersion with the versions provided
     public init(_ versions: NamedVersion...) { self.init(versions) }
 }
 
 //MARK: CustomStringConvertible
 extension NamedVersion: CustomStringConvertible, Hashable {
-    
-    // Creates a new instane of NamedVersion from the string or return nil if the string is invalid
+    /// Creates an instance initialized to the given string value.
     public init?(_ description: String) {
         //Make sure we start with a version pattern
         //let generalTestPattern: String = NamedVersion.SINGLE_VERSION_REGEX
@@ -266,7 +246,6 @@ extension NamedVersion: CustomStringConvertible, Hashable {
         }
     }
     
-    // Provides a string representation of the NamedVersion
     public var description: String {
         var rtn: String = ""
         
@@ -283,7 +262,7 @@ extension NamedVersion: CustomStringConvertible, Hashable {
         return rtn
     }
     
-    // Provides a sorted string representation of the NamedVersion.  This only affects compound versions.  They get sorted before converting to strings
+    /// Provides a sorted string representation of the NamedVersion.  This only affects compound versions.  They get sorted before converting to strings
     var sortedDescription: String {
         var rtn: String = ""
         
