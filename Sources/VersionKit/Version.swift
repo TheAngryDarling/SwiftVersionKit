@@ -7,16 +7,12 @@
 
 import Foundation
 
-/**
- Storage for version values
- - single: Stores a single instance of a version
- - compound: Stores an array of versions
- */
+/// Storage for version values
+/// - single: Stores a single instance of a version
+/// - compound: Stores an array of versions
 public enum Version {
     
-    /**
-     Single instance of a version.
-     */
+    /// Single instance of a version.
     public struct SingleVersion {
         public let major: UInt
         public let minor: UInt
@@ -25,9 +21,9 @@ public enum Version {
         public let build: [String]
     }
     
-    // Regular Expression for checking for a single version
+    /// Regular Expression for checking for a single version
     public static let SINGLE_VERSION_REGEX: String = "(v|version |)(\\d+)\\.(\\d+)(?:\\.(\\d+))?((\\-\\w+)+)?((\\+\\w+)+)?"
-    // Regular Expression for checking for compound versions
+    /// Regular Expression for checking for compound versions
     public static let COMPOUND_VERSION_REGEX: String = "(" + SINGLE_VERSION_REGEX + ")(?:\\s+\\+\\s+(\(SINGLE_VERSION_REGEX)))*"
     
     private static let MAJOR_VALUE_RANGE_INDEX: Int = 2
@@ -36,40 +32,33 @@ public enum Version {
     private static let PRE_RELEASE_VALUE_RANGE_INDEX: Int = 5
     private static let BUILD_VALUE_RANGE_INDEX: Int = 7
     
-    // Single instance of version
+    /// Single instance of version
     case single(SingleVersion)
-    // Compound group of named version
+    /// Compound group of named version
     case compound([SingleVersion])
     
-    /***
-     @brief If the current version is a compound version, this method will sort the versions and save the new order
-    */
+    /// If the current version is a compound version, this method will sort the versions and save the new order
     public mutating func sort() {
         guard case let Version.compound(ary) = self else { return }
         let sA = ary.sorted()
         self = .compound(sA)
     }
     
-    /**
-     @brief Copies the current version, sorts if its a compound version and returns the new version
-    */
+    /// Copies the current version, sorts if its a compound version and returns the new version
     public func sorted() -> Version {
         guard case let Version.compound(ary) = self else { return self }
         let sA = ary.sorted()
         return .compound(sA)
     }
     
-    /**
-     @brief Indicates if this is a single version or a compound version
-    */
+    /// Indicates if this is a single version or a compound version
     internal var isSingleVersion: Bool {
         if case Version.single = self { return true }
         else { return false }
     }
     
-    /**
-     @brief Returns an array of all versions stored in this instance.  If this is a single version the array contains one element, else will return all elements in the compound form
-    */
+    /// Returns an array of all versions stored in this instance.
+    /// If this is a single version the array contains one element, else will return all elements in the compound form
     internal var versions: [SingleVersion] {
         var rtn: [SingleVersion] = []
         
@@ -82,9 +71,7 @@ public enum Version {
         return rtn
     }
     
-    /**
-     @brief If this is a single version, return the SingleVersion object
-    */
+    /// If this is a single version, return the SingleVersion object
     public var singleVersion: SingleVersion? {
         guard case Version.single(let v) = self else { return nil }
         return v
@@ -100,21 +87,25 @@ public enum Version {
 
 // MARK: - init
 public extension Version {
+    /// Creates a new instance of single Version with a single version
     public init(_ version: SingleVersion) {
         self = .single(version)
     }
+    /// Creates a new instance of a single Version with the version information
     public init(major: UInt, minor: UInt, revision: UInt? = nil, prerelease: [String] = [], build: [String] = []) {
         self.init(SingleVersion(major: major, minor: minor, revision: revision, prerelease: prerelease, build: build))
     }
+    /// Creates a new instane of a compound Version with the versions provided
     public init(_ versions: [SingleVersion]) {
         precondition(versions.count > 0, "Must have alteast 1 version")
-        if versions.count == 1 { self.init(versions[0]) }
+        if versions.count == 1 { self = .single(versions[0]) }
         else { self = .compound(versions) }
     }
+    /// Creates a new instane of a compound Version with the versions provided
     public init(_ versions: SingleVersion...) {
         self.init(versions)
     }
-    
+    /// Creates a new instane of a compound Version with the versions provided
     public init(_ versions: [Version]) {
         var vary: [SingleVersion] = []
         for v in versions {
@@ -122,6 +113,7 @@ public extension Version {
         }
         self.init(vary)
     }
+    /// Creates a new instane of a compound Version with the versions provided
     public init(_ versions: Version...) {
         self.init(versions)
     }
@@ -129,7 +121,7 @@ public extension Version {
 
 // MARK: LosslessStringConvertible
 extension Version: LosslessStringConvertible, Hashable {
-    
+     /// Creates an instance initialized to the given string value.
      public init?(_ description: String) {
         //Make sure we start with a version pattern
         //let generalTestPattern: String = Version.SINGLE_VERSION_REGEX
