@@ -88,25 +88,25 @@ public enum Version {
 // MARK: - init
 public extension Version {
     /// Creates a new instance of single Version with a single version
-    public init(_ version: SingleVersion) {
+    init(_ version: SingleVersion) {
         self = .single(version)
     }
     /// Creates a new instance of a single Version with the version information
-    public init(major: UInt, minor: UInt, revision: UInt? = nil, prerelease: [String] = [], build: [String] = []) {
+    init(major: UInt, minor: UInt, revision: UInt? = nil, prerelease: [String] = [], build: [String] = []) {
         self.init(SingleVersion(major: major, minor: minor, revision: revision, prerelease: prerelease, build: build))
     }
     /// Creates a new instane of a compound Version with the versions provided
-    public init(_ versions: [SingleVersion]) {
+    init(_ versions: [SingleVersion]) {
         precondition(versions.count > 0, "Must have alteast 1 version")
         if versions.count == 1 { self = .single(versions[0]) }
         else { self = .compound(versions) }
     }
     /// Creates a new instane of a compound Version with the versions provided
-    public init(_ versions: SingleVersion...) {
+    init(_ versions: SingleVersion...) {
         self.init(versions)
     }
     /// Creates a new instane of a compound Version with the versions provided
-    public init(_ versions: [Version]) {
+    init(_ versions: [Version]) {
         var vary: [SingleVersion] = []
         for v in versions {
             vary.append(contentsOf: v.versions)
@@ -114,13 +114,13 @@ public extension Version {
         self.init(vary)
     }
     /// Creates a new instane of a compound Version with the versions provided
-    public init(_ versions: Version...) {
+    init(_ versions: Version...) {
         self.init(versions)
     }
 }
 
 // MARK: LosslessStringConvertible
-extension Version: LosslessStringConvertible, Hashable {
+extension Version: LosslessStringConvertible {
      /// Creates an instance initialized to the given string value.
      public init?(_ description: String) {
         //Make sure we start with a version pattern
@@ -233,10 +233,18 @@ extension Version: LosslessStringConvertible, Hashable {
         
         return rtn
     }
-    
-    public var hashValue: Int { return self.sortedDescription.hashValue }
 }
 
+extension Version: Hashable {
+    #if !swift(>=4.1.4)
+    public var hashValue: Int { return self.sortedDescription.hashValue }
+    #endif
+    #if swift(>=4.1.4)
+    public func hash(into hasher: inout Hasher) {
+        self.sortedDescription.hash(into: &hasher)
+    }
+    #endif
+}
 
 //MARK: Comparable
 extension Version: Comparable {

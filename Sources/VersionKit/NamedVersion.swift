@@ -152,23 +152,23 @@ public enum NamedVersion {
 // MARK: init
 public extension NamedVersion {
     /// Creates a new instance of single NamedVersion with a single version
-    public init(_ version: SingleVersion) {
+    init(_ version: SingleVersion) {
         self = .single(version)
     }
     
     /// Creates a new instance of a single NamedVersion with a the name and version
-    public init(name: String, version: Version) {
+    init(name: String, version: Version) {
         self.init(SingleVersion(name: name, version: version))
     }
     
     /// Creates a new instance of a single NamedVersion with a the name and versions
-    public init(name: String, versions: Version...) {
+    init(name: String, versions: Version...) {
         precondition(versions.count > 0, "Atleast one versions must be provided")
         self.init(SingleVersion(name: name, version: Version(versions)))
     }
     
     /// Creates a new instance of a single NamedVersion with a the name and version information
-    public init(name: String, major: UInt, minor: UInt, revision: UInt?, prerelease: [String], build: [String]) {
+    init(name: String, major: UInt, minor: UInt, revision: UInt?, prerelease: [String], build: [String]) {
         self.init(name: name,
                   version: Version(major: major,
                                    minor: minor,
@@ -178,21 +178,56 @@ public extension NamedVersion {
     }
     
     /// Creates a new instane of a compound NamedVersion with the versions provided
-    public init(_ versions: [NamedVersion.SingleVersion]) {
+    init(_ versions: [NamedVersion.SingleVersion]) {
         precondition(versions.count > 0, "Atleast one versions must be provided")
         self = .compound(versions)
     }
     
     /// Creates a new instane of a compound NamedVersion with the versions provided
-    public init(_ versions: NamedVersion.SingleVersion...) { self.init(versions) }
+    init(_ versions: NamedVersion.SingleVersion...) { self.init(versions) }
     /// Creates a new instane of a compound NamedVersion with the versions provided
-    public init(_ versions: [NamedVersion]) { self.init( versions.flatMap( { $0.versions }) ) }
+    init(_ versions: [NamedVersion]) { self.init( versions.flatMap( { $0.versions }) ) }
     /// Creates a new instane of a compound NamedVersion with the versions provided
-    public init(_ versions: NamedVersion...) { self.init(versions) }
+    init(_ versions: NamedVersion...) { self.init(versions) }
 }
 
 //MARK: CustomStringConvertible
-extension NamedVersion: CustomStringConvertible, Hashable {
+extension NamedVersion: CustomStringConvertible {
+    
+    public var description: String {
+        var rtn: String = ""
+        
+        switch(self) {
+        case let .single(v):
+            rtn = v.description
+        case .compound(let ary):
+            for (i, a) in ary.enumerated() {
+                if i > 0 { rtn += " + " }
+                rtn += a.description
+            }
+        }
+        
+        return rtn
+    }
+    
+    /// Provides a sorted string representation of the NamedVersion.  This only affects compound versions.  They get sorted before converting to strings
+    var sortedDescription: String {
+        var rtn: String = ""
+        
+        switch(self) {
+        case let .single(v):
+            rtn = v.description
+        case .compound(let ary):
+            for (i, a) in ary.sorted().enumerated() {
+                if i > 0 { rtn += " + " }
+                rtn += a.description
+            }
+        }
+        
+        return rtn
+    }
+    
+    
     /// Creates an instance initialized to the given string value.
     public init?(_ description: String) {
         //Make sure we start with a version pattern
@@ -246,40 +281,18 @@ extension NamedVersion: CustomStringConvertible, Hashable {
         }
     }
     
-    public var description: String {
-        var rtn: String = ""
-        
-        switch(self) {
-        case let .single(v):
-            rtn = v.description
-        case .compound(let ary):
-            for (i, a) in ary.enumerated() {
-                if i > 0 { rtn += " + " }
-                rtn += a.description
-            }
-        }
-        
-        return rtn
-    }
     
-    /// Provides a sorted string representation of the NamedVersion.  This only affects compound versions.  They get sorted before converting to strings
-    var sortedDescription: String {
-        var rtn: String = ""
-        
-        switch(self) {
-        case let .single(v):
-            rtn = v.description
-        case .compound(let ary):
-            for (i, a) in ary.sorted().enumerated() {
-                if i > 0 { rtn += " + " }
-                rtn += a.description
-            }
-        }
-        
-        return rtn
-    }
-    
+}
+
+extension NamedVersion: Hashable {
+    #if !swift(>=4.1.4)
     public var hashValue: Int { return self.sortedDescription.hashValue }
+    #endif
+    #if swift(>=4.1.4)
+    public func hash(into hasher: inout Hasher) {
+        self.sortedDescription.hash(into: &hasher)
+    }
+    #endif
 }
 
 //MARK: ExpressibleByStringLiteral
