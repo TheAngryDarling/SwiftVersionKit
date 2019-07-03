@@ -15,7 +15,7 @@ final class VersionKitTests: XCTestCase {
     let printResults = VersionKitTests.VERBOSE
     
     func testVersions() {
-        let versions: [String] = ["1.0","1.0.1","1.0-R12A","1.0.1-R12A","1.0.1-R12A-ABCD+ASDF+RX2A"]
+        let versions: [String] = ["1.0","1.0-R12A","1.0.1","1.0.1-R12A","1.0.1-R12A-ABCD+ASDF+RX2A"]
         if printResults { print("Testing single version format") }
         for (_, v) in versions.enumerated() {
             
@@ -40,20 +40,71 @@ final class VersionKitTests: XCTestCase {
             return rtn
         }()
         
+        var builtVersions: [Version] = []
         if printResults { print("\nTesting multi version format") }
         for (_, v) in multiVersions.enumerated() {
             guard let ef = Version(v) else {
                 XCTFail("Failed to parse version '\(v)'")
                 continue
             }
+            builtVersions.append(ef)
             XCTAssert(ef.description == v, "Improper parsing of format '\(v)' to '\(ef.description)'")
             if printResults { print("\t" + v + " ------ " + ef.description) }
             
         }
+        
+        builtVersions.sort()
+         if printResults { print("\nSorted Versions") }
+        for v in builtVersions {
+            if printResults { print("\t" + v.description) }
+        }
+    }
+    
+    func testVersionSorting() {
+        do {
+            let versions: [String] = ["1.0","1.0-R12A","1.0.1","1.0.1-R12A","1.0.1-R12A-ABCD+ASDF+RX2A"]
+            if printResults { print("Testing version sorting") }
+            for i in 1..<versions.count {
+                guard let v1 = Version(versions[i-1]) else {
+                    XCTFail("Failed to parse version '\(versions[i-1])'")
+                    continue
+                }
+                guard let v2 = Version(versions[i]) else {
+                    XCTFail("Failed to parse version '\(versions[i])'")
+                    continue
+                }
+                
+                XCTAssert(v1 < v2, "Lessthan comparison failure '\(v1)' < '\(v2)'")
+                
+            }
+        }
+            
+        do {
+            let versions: [String] = [
+                                      "APP124 1.0.1+R12A",
+                                      "Lib B 1.0.1+R12A",
+                                      "Program A B 1.0-R12A",
+                                      "ProgramA 1.0-R12A",
+                                      ]
+            for i in 1..<versions.count {
+                guard let v1 = NamedVersion(versions[i-1]) else {
+                    XCTFail("Failed to parse version '\(versions[i-1])'")
+                    continue
+                }
+                guard let v2 = NamedVersion(versions[i]) else {
+                    XCTFail("Failed to parse version '\(versions[i])'")
+                    continue
+                }
+                
+                XCTAssert(v1 < v2, "Lessthan comparison failure '\(v1)' < '\(v2)'")
+                
+            }
+        }
+        
     }
     
     func testNamedVersions() {
-        let versionsNumbers: [String] = ["1.0","1.0.1","1.0-R12A","1.0.1+R12A"]
+        let versionsNumbers: [String] = ["9","1.0","1.0.1","1.0-R12A","1.0.1+R12A"]
         let names: [String] = ["ProgramA", "Lib B", "APP124", "Program A B"]
         
         let versions: [String] = {
@@ -66,6 +117,7 @@ final class VersionKitTests: XCTestCase {
             return rtn
         }()
         
+       
         if printResults { print("Testing single named version format") }
         for (_, v) in versions.enumerated() {
             //if i > 0 { break }
@@ -90,6 +142,7 @@ final class VersionKitTests: XCTestCase {
             return rtn
         }()
         
+        var builtVersions: [NamedVersion] = []
         if printResults { print("\nTesting multi named version format") }
         for (_, v) in multiVersions.enumerated() {
             //if i > 0 { break }
@@ -97,15 +150,23 @@ final class VersionKitTests: XCTestCase {
                 XCTFail("Failed to parse version '\(v)'")
                 continue
             }
+            builtVersions.append(ef)
             XCTAssert(ef.description == v, "Improper parsing of format '\(v)' to '\(ef.description)'")
             if printResults { print("\t" + v + " ------ " + ef.description) }
             
+        }
+        
+        builtVersions.sort()
+        if printResults { print("\nSorted Versions") }
+        for v in builtVersions {
+            if printResults { print("\t" + v.description) }
         }
     }
 
 
     static var allTests = [
         ("testVersions", testVersions),
-        ("testNamedVersions",testNamedVersions)
+        ("testNamedVersions",testNamedVersions),
+        ("testVersionSorting", testVersionSorting)
     ]
 }
