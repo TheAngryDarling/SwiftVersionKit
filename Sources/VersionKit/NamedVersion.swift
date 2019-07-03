@@ -34,7 +34,7 @@ public enum NamedVersion {
     }
     
     /// Regular Expression for checking for a single named version
-    public static let SINGLE_VERSION_REGEX: String = "(\\w+(\\s\\w+)*)\\s+(" + Version.COMPOUND_VERSION_REGEX + ")"
+    public static let SINGLE_VERSION_REGEX: String = "(\\w+(\\s\\w+)*)\\s+(" + Version.COMPOUND_VERSION_OPTIONAL_MINOR_REGEX + ")"
     /// Regular Expression for checking for compound named versions
     public static let COMPOUND_VERSION_REGEX: String = "(" + SINGLE_VERSION_REGEX + ")(?:\\s+\\+\\s+(\(SINGLE_VERSION_REGEX)))*"
     
@@ -168,7 +168,7 @@ public extension NamedVersion {
     }
     
     /// Creates a new instance of a single NamedVersion with a the name and version information
-    init(name: String, major: UInt, minor: UInt, revision: UInt?, prerelease: [String], build: [String]) {
+    init(name: String, major: UInt, minor: UInt? = nil, revision: UInt? = nil, prerelease: [String] = [], build: [String] = []) {
         self.init(name: name,
                   version: Version(major: major,
                                    minor: minor,
@@ -264,7 +264,7 @@ extension NamedVersion: CustomStringConvertible {
                 //print(sName)
                 let rVersion = Range<String.Index>(t.range(at: NamedVersion.VERSION_VALUE_RANGE_INDEX), in: description)!
                 let sVersion = String(description[rVersion])
-                let ver = Version(sVersion)!
+                let ver = Version(groupVersion: sVersion)!
                 
                 
                 versions.append(SingleVersion(name: sName, version: ver))
@@ -321,7 +321,15 @@ extension NamedVersion: Comparable {
         return (lhs.sortedDescription.lowercased() == rhs.sortedDescription.lowercased())
     }
     public static func <(lhs: NamedVersion, rhs: NamedVersion) -> Bool {
-        return (lhs.sortedDescription.lowercased() < rhs.sortedDescription.lowercased())
+        let count = lhs.versions.count < rhs.versions.count ? lhs.versions.count : rhs.versions.count
+        for i in 0..<count {
+            if lhs.versions[i] < rhs.versions[i] { return true }
+            else if lhs.versions[i] > rhs.versions[i] { return false }
+        }
+        if lhs.versions.count < rhs.versions.count { return true }
+        return false
+        
+        //return (lhs.sortedDescription.lowercased() < rhs.sortedDescription.lowercased())
     }
 }
 
@@ -334,7 +342,7 @@ extension NamedVersion.SingleVersion: Comparable {
     public static func < (lhs: NamedVersion.SingleVersion, rhs: NamedVersion.SingleVersion) -> Bool {
         if lhs.name < rhs.name { return true }
         else if lhs.name > rhs.name { return false }
-        if lhs.version < rhs.version { return true }
+        else if lhs.version < rhs.version { return true }
         else { return false }
     }
 }
