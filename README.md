@@ -8,10 +8,10 @@ Used for storing version information or group of versions
 
 Single Version Fields:
 * Major: UInt
-* Minor: UInt
+* Minor: UInt <- Optional on Named Versions
 * Revision: UInt <- Optional
-* Prerelease: [String] <- Optional (- Seprator)
-* Build: [String] <- Optional (+ Seperator)
+* Prerelease: [String] <- Optional (- Separator)
+* Build: [String] <- Optional (+ Separator)
 
 ## Usage
 
