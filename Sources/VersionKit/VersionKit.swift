@@ -9,5 +9,5 @@ import Foundation
 
 public struct VersionKit {
     /// Name and Version of this package
-    public static let version: NamedVersion = "VersionKit 1.0.3"
+    public static let version: NamedVersion = "VersionKit 1.0.5"
 }
