@@ -353,14 +353,14 @@ extension NamedVersion: CustomStringConvertible {
                         print("\t[\(i)]: ")
                     }
                 }*/
-                let rName = Range<String.Index>(t.range(at: NamedVersion.NAME_VALUE_RANGE_INDEX), in: description)!
+                /*let rName = Range<String.Index>(t.range(at: NamedVersion.NAME_VALUE_RANGE_INDEX), in: description)!
                 let sName = String(description[rName])
                 //print(sName)
                 let rVersion = Range<String.Index>(t.range(at: NamedVersion.VERSION_VALUE_RANGE_INDEX), in: description)!
                 let sVersion = String(description[rVersion])
                 let ver = Version(groupVersion: sVersion)!
                 
-                versions.append(SingleVersion(name: sName, version: ver))
+                versions.append(SingleVersion(name: sName, version: ver))*/
                 
                 
                 let groupRange = Range<String.Index>(t.range, in: description)!
@@ -408,7 +408,7 @@ extension NamedVersion.SingleVersion: CustomStringConvertible {
             let r = NSMakeRange(0, description.distance(from: description.startIndex, to: description.endIndex))
             
             let textResults = regx.matches(in: description, range: r)
-            guard textResults.count == 0 else { return nil }
+            guard textResults.count == 1 else { return nil }
             let t = textResults.first!
             
             let rName = Range<String.Index>(t.range(at: NamedVersion.NAME_VALUE_RANGE_INDEX), in: description)!
