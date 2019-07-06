@@ -60,49 +60,6 @@ final class VersionKitTests: XCTestCase {
         }
     }
     
-    func testVersionSorting() {
-        do {
-            let versions: [String] = ["1.0","1.0-R12A","1.0.1","1.0.1-R12A","1.0.1-R12A-ABCD+ASDF+RX2A"]
-            if printResults { print("Testing version sorting") }
-            for i in 1..<versions.count {
-                guard let v1 = Version(versions[i-1]) else {
-                    XCTFail("Failed to parse version '\(versions[i-1])'")
-                    continue
-                }
-                guard let v2 = Version(versions[i]) else {
-                    XCTFail("Failed to parse version '\(versions[i])'")
-                    continue
-                }
-                
-                XCTAssert(v1 < v2, "Lessthan comparison failure '\(v1)' < '\(v2)'")
-                
-            }
-        }
-            
-        do {
-            let versions: [String] = [
-                                      "APP124 1.0.1+R12A",
-                                      "Lib B 1.0.1+R12A",
-                                      "Program A B 1.0-R12A",
-                                      "ProgramA 1.0-R12A",
-                                      ]
-            for i in 1..<versions.count {
-                guard let v1 = NamedVersion(versions[i-1]) else {
-                    XCTFail("Failed to parse version '\(versions[i-1])'")
-                    continue
-                }
-                guard let v2 = NamedVersion(versions[i]) else {
-                    XCTFail("Failed to parse version '\(versions[i])'")
-                    continue
-                }
-                
-                XCTAssert(v1 < v2, "Lessthan comparison failure '\(v1)' < '\(v2)'")
-                
-            }
-        }
-        
-    }
-    
     func testNamedVersions() {
         let versionsNumbers: [String] = ["9","1.0","1.0.1","1.0-R12A","1.0.1+R12A"]
         let names: [String] = ["ProgramA", "Lib B", "APP124", "Program A B"]
@@ -162,11 +119,79 @@ final class VersionKitTests: XCTestCase {
             if printResults { print("\t" + v.description) }
         }
     }
-
+    
+    func testVersionSorting() {
+        do {
+            let versions: [String] = ["1.0","1.0-R12A","1.0.1","1.0.1-R12A","1.0.1-R12A-ABCD+ASDF+RX2A"]
+            if printResults { print("Testing version sorting") }
+            for i in 1..<versions.count {
+                guard let v1 = Version(versions[i-1]) else {
+                    XCTFail("Failed to parse version '\(versions[i-1])'")
+                    continue
+                }
+                guard let v2 = Version(versions[i]) else {
+                    XCTFail("Failed to parse version '\(versions[i])'")
+                    continue
+                }
+                
+                XCTAssert(v1 < v2, "Lessthan comparison failure '\(v1)' < '\(v2)'")
+                
+            }
+        }
+        
+        do {
+            let versions: [String] = [
+                "APP124 1.0.1+R12A",
+                "Lib B 1.0.1+R12A",
+                "Program A B 1.0-R12A",
+                "ProgramA 1.0-R12A",
+                ]
+            for i in 1..<versions.count {
+                guard let v1 = NamedVersion(versions[i-1]) else {
+                    XCTFail("Failed to parse version '\(versions[i-1])'")
+                    continue
+                }
+                guard let v2 = NamedVersion(versions[i]) else {
+                    XCTFail("Failed to parse version '\(versions[i])'")
+                    continue
+                }
+                
+                XCTAssert(v1 < v2, "Lessthan comparison failure '\(v1)' < '\(v2)'")
+                
+            }
+        }
+        
+    }
+    
+    func testBasicNamedVersions() {
+        do {
+            let versions: [String] = [
+                "APP124 1.0.1+R12A",
+                "Lib B 1.0.1+R12A",
+                "Program A B 1.0-R12A",
+                "ProgramA 1.0-R12A",
+                ]
+            for i in 1..<versions.count {
+                guard let v1 = NamedVersion.BasicVersion(versions[i-1]) else {
+                    XCTFail("Failed to parse version '\(versions[i-1])'")
+                    continue
+                }
+                XCTAssert(v1.description == versions[i-1], "Description comparison failure '\(v1.description)' == '\(versions[i-1])'")
+                guard let v2 = NamedVersion.BasicVersion(versions[i]) else {
+                    XCTFail("Failed to parse version '\(versions[i])'")
+                    continue
+                }
+                XCTAssert(v2.description == versions[i], "Description comparison failure '\(v2.description)' == '\(versions[i])'")
+                XCTAssert(v1 < v2, "Lessthan comparison failure '\(v1)' < '\(v2)'")
+                
+            }
+        }
+    }
 
     static var allTests = [
         ("testVersions", testVersions),
         ("testNamedVersions",testNamedVersions),
-        ("testVersionSorting", testVersionSorting)
+        ("testVersionSorting", testVersionSorting),
+        ("testBasicNamedVersions", testBasicNamedVersions)
     ]
 }
