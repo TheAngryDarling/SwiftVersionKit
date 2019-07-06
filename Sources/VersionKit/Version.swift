@@ -150,16 +150,6 @@ extension Version: LosslessStringConvertible {
             
             var versions: [SingleVersion] = []
             for t in textResults {
-                /*for i in 0..<t.numberOfRanges {
-                 let r = t.range(at: i)
-                 if r.length > 0 {
-                 let rS = Range<String.Index>(t.range(at: i), in: description)!
-                 print("\t[\(i)]: \(description[rS])")
-                 } else {
-                 print("\t[\(i)]: ")
-                 }
-                 }*/
-                
                 var iMajor: UInt = 0
                 var iMinor: UInt? = nil
                 var iRevision: UInt? = nil
@@ -217,87 +207,9 @@ extension Version: LosslessStringConvertible {
         self.init(versionString: description,
                   compoundPattern: Version.COMPOUND_VERSION_REGEX,
                   singlePattern: Version.SINGLE_VERSION_REGEX)
-        
-        /*
-        //Make sure we start with a version pattern
-        //let generalTestPattern: String = Version.SINGLE_VERSION_REGEX
-        let generalTestPattern: String = Version.COMPOUND_VERSION_REGEX
-        guard description.range(of: "^\(generalTestPattern)$",
-                                options: [String.CompareOptions.regularExpression, String.CompareOptions.caseInsensitive]) != nil else {
-                                    debugPrint("String '\(description)' does not match pattern '^\(generalTestPattern)'")
-                                    return nil }
-        do {
-            
-            //let pattern: String = "(\(Version.SINGLE_VERSION_REGEX)( \\+|$))+"
-            let pattern: String = Version.SINGLE_VERSION_REGEX
-            //print(pattern)
-            let regx: NSRegularExpression = try NSRegularExpression(pattern: pattern, options: .caseInsensitive)
-            
-            let r = NSMakeRange(0, description.distance(from: description.startIndex, to: description.endIndex))
-            
-            let textResults = regx.matches(in: description, range: r)
-            //print(description + " - \(textResults.count)")
-            
-            var versions: [SingleVersion] = []
-            for t in textResults {
-                /*for i in 0..<t.numberOfRanges {
-                    let r = t.range(at: i)
-                    if r.length > 0 {
-                        let rS = Range<String.Index>(t.range(at: i), in: description)!
-                        print("\t[\(i)]: \(description[rS])")
-                    } else {
-                        print("\t[\(i)]: ")
-                    }
-                }*/
-                
-                var iMajor: UInt = 0
-                var iMinor: UInt? = nil
-                var iRevision: UInt? = nil
-                var saPrerelease: [String] = []
-                var saBuild: [String] = []
-                //var sBuild: String? = nil
-                
-                let rMajor = Range<String.Index>(t.range(at: Version.MAJOR_VALUE_RANGE_INDEX), in: description)!
-                iMajor = UInt(description[rMajor])!
-                
-                let rMinor = Range<String.Index>(t.range(at: Version.MINOR_VALUE_RANGE_INDEX), in: description)!
-                iMinor = UInt(description[rMinor])!
-                if t.range(at: Version.REVISION_VALUE_RANGE_INDEX).length > 0 {
-                    let rRevision = Range<String.Index>(t.range(at: Version.REVISION_VALUE_RANGE_INDEX), in: description)!
-                    iRevision = UInt(description[rRevision])
-                }
-                
-                if t.range(at: Version.PRE_RELEASE_VALUE_RANGE_INDEX).length > 0 {
-                    let rBuild = Range<String.Index>(t.range(at: Version.PRE_RELEASE_VALUE_RANGE_INDEX), in: description)!
-                    saPrerelease = description[rBuild].split(separator: "-").map({ String($0) })
-                }
-                
-                if t.range(at: Version.BUILD_VALUE_RANGE_INDEX).length > 0 {
-                    let rBuild = Range<String.Index>(t.range(at: Version.BUILD_VALUE_RANGE_INDEX), in: description)!
-                    saBuild = description[rBuild].split(separator: "+").map({ String($0) })
-                }
-                
-                
-                /*if t.range(at: Version.BUILD_VALUE_RANGE_INDEX).length > 0 {
-                    let rBuild = Range<String.Index>(t.range(at: Version.BUILD_VALUE_RANGE_INDEX), in: description)!
-                    sBuild = String(description[rBuild])
-                }*/
-                
-                versions.append(SingleVersion(major: iMajor, minor: iMinor, revision: iRevision, prerelease: saPrerelease, build: saBuild))
-                
-            }
-            if versions.count == 0 { return nil }
-            self.init(versions)
-            //if versions.count == 1 { self = versions[0] }
-            //else if versions.count > 1 { self = .compound(versions) }
-            //else { return nil }
-            
-        } catch {
-            debugPrint(error)
-            return nil
-        }
-        */
      }
+    
+    
     
     internal init?(groupVersion: String) {
         self.init(versionString: groupVersion,
@@ -418,7 +330,6 @@ extension Version: ExpressibleByStringLiteral {
         
         self.init(stringLiteral: value)
     }
-    
 }
 
 // MARK: - SingleVersion
@@ -468,9 +379,101 @@ extension Version.SingleVersion: Comparable {
         else { return false }
         
     }
+    
+    public static func ~=(lhs: Version.SingleVersion, rhs: Version.SingleVersion) -> Bool {
+        return (lhs.major == rhs.major &&
+            ((lhs.minor == rhs.minor) || (lhs.minor == 0 && rhs.minor == nil) || (lhs.minor == nil && rhs.minor == 0)) &&
+            lhs.revision == rhs.revision &&
+            lhs.prerelease == rhs.prerelease &&
+            lhs.build == rhs.build)
+    }
 }
 // MARK: CustomStringConvertible
-extension Version.SingleVersion: CustomStringConvertible {
+extension Version.SingleVersion: LosslessStringConvertible, ExpressibleByStringLiteral {
+    
+    internal init?(versionString: String, pattern: String) {
+        //Make sure we start with a version pattern
+        //let generalTestPattern: String = Version.SINGLE_VERSION_REGEX
+        guard versionString.range(of: "^\(pattern)$",
+            options: [String.CompareOptions.regularExpression, String.CompareOptions.caseInsensitive]) != nil else {
+                debugPrint("String '\(versionString)' does not match pattern '^\(pattern)'")
+                return nil }
+        do {
+            
+            
+            let regx: NSRegularExpression = try NSRegularExpression(pattern: "^\(pattern)$", options: .caseInsensitive)
+            
+            let r = NSMakeRange(0, versionString.distance(from: versionString.startIndex, to: versionString.endIndex))
+            
+            let textResults = regx.matches(in: versionString, range: r)
+            guard textResults.count == 1 else { return nil }
+            
+            let t = textResults.first!
+            var iMajor: UInt = 0
+            var iMinor: UInt? = nil
+            var iRevision: UInt? = nil
+            var saPrerelease: [String] = []
+            var saBuild: [String] = []
+            //var sBuild: String? = nil
+            
+            let rMajor = Range<String.Index>(t.range(at: Version.MAJOR_VALUE_RANGE_INDEX), in: versionString)!
+            iMajor = UInt(versionString[rMajor])!
+            
+            if t.range(at: Version.MINOR_VALUE_RANGE_INDEX).length > 0 {
+                let rMinor = Range<String.Index>(t.range(at: Version.MINOR_VALUE_RANGE_INDEX), in: versionString)!
+                iMinor = UInt(versionString[rMinor])
+            }
+            
+            if t.range(at: Version.REVISION_VALUE_RANGE_INDEX).length > 0 {
+                let rRevision = Range<String.Index>(t.range(at: Version.REVISION_VALUE_RANGE_INDEX), in: versionString)!
+                iRevision = UInt(versionString[rRevision])
+            }
+            
+            if t.range(at: Version.PRE_RELEASE_VALUE_RANGE_INDEX).length > 0 {
+                let rBuild = Range<String.Index>(t.range(at: Version.PRE_RELEASE_VALUE_RANGE_INDEX), in: versionString)!
+                saPrerelease = versionString[rBuild].split(separator: "-").map({ String($0) })
+            }
+            
+            if t.range(at: Version.BUILD_VALUE_RANGE_INDEX).length > 0 {
+                let rBuild = Range<String.Index>(t.range(at: Version.BUILD_VALUE_RANGE_INDEX), in: versionString)!
+                saBuild = versionString[rBuild].split(separator: "+").map({ String($0) })
+            }
+            
+            
+            self.init(major: iMajor, minor: iMinor, revision: iRevision, prerelease: saPrerelease, build: saBuild)
+            
+        } catch {
+            debugPrint(error)
+            return nil
+        }
+    }
+    
+    
+    /// Creates an instance initialized to the given string value.
+    public init?(_ description: String) {
+        self.init(versionString: description,
+                  pattern: Version.SINGLE_VERSION_REGEX)
+    }
+    
+    public init(stringLiteral value: String) {
+        guard let v = Version.SingleVersion(value) else {
+            fatalError("Invalid SingleVersion string literal '\(value)'")
+        }
+        self = v
+    }
+    public init(unicodeScalarLiteral value: String) {
+        self.init(stringLiteral: value)
+    }
+    public init(extendedGraphemeClusterLiteral value: String) {
+        
+        self.init(stringLiteral: value)
+    }
+    
+    internal init?(groupVersion: String) {
+        self.init(versionString: groupVersion,
+                  pattern: Version.SINGLE_VERSION_OPTIONAL_MINOR_REGEX)
+    }
+    
     public var description: String {
         var rtn: String = "\(self.major)"
         if let m = self.minor { rtn += ".\(m)" }
@@ -481,4 +484,14 @@ extension Version.SingleVersion: CustomStringConvertible {
         return rtn
     }
 }
+
+public func ==(lhs: Version, rhs: Version.SingleVersion) -> Bool {
+    let rhsV = Version.compound([rhs])
+    return lhs == rhsV
+}
+public func ==(lhs: Version.SingleVersion, rhs: Version) -> Bool {
+    let lhsV = Version.compound([lhs])
+    return lhsV == rhs
+}
+
 
