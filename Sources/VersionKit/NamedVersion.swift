@@ -33,8 +33,20 @@ public enum NamedVersion {
         public let version: Version
     }
     
+    /// Single version with only one name and one version number
+    public struct BasicVersion {
+        /// Name of object (eg. Program, Library)
+        public let name: String
+        /// Version of object
+        public let version: Version.SingleVersion
+    }
+    
     /// Regular Expression for checking for a single named version
     public static let SINGLE_VERSION_REGEX: String = "(\\w+(\\s\\w+)*)\\s+(" + Version.COMPOUND_VERSION_OPTIONAL_MINOR_REGEX + ")"
+    
+    /// Regular Expression for checking for a single named version
+    public static let SINGLE_VERSION_BASIC_REGEX: String = "(\\w+(\\s\\w+)*)\\s+(" + Version.SINGLE_VERSION_OPTIONAL_MINOR_REGEX + ")"
+    
     /// Regular Expression for checking for compound named versions
     public static let COMPOUND_VERSION_REGEX: String = "(" + SINGLE_VERSION_REGEX + ")(?:\\s+\\+\\s+(\(SINGLE_VERSION_REGEX)))*"
     
@@ -43,6 +55,8 @@ public enum NamedVersion {
     /// Indicates the group locaton within the regular expression for the version of the named version on a single version regex
     private static let VERSION_VALUE_RANGE_INDEX: Int = 3
     
+    /// Basic instance of named version
+    case basic(BasicVersion)
     /// Single instance of named version
     case single(SingleVersion)
     /// Compound group of named version
@@ -62,17 +76,33 @@ public enum NamedVersion {
         return .compound(sA)
     }
     
-    /// Indicates if this is a single version or a compound version
-    public var isSingleVersion: Bool {
-        if case NamedVersion.single = self { return true }
+    /// Indicates if this is a basic version
+    public var isBasicVersion: Bool {
+        if case NamedVersion.basic = self { return true }
         else { return false }
     }
     
-    /// Returns an array of all versions stored in this instance.  If this is a single version the array contains one element, else will return all elements in the compound form
+    /// Indicates if this is a single version.  Basic versions are considered single versions.
+    public var isSingleVersion: Bool {
+        if case NamedVersion.basic = self { return true }
+        else if case NamedVersion.single = self { return true }
+        else { return false }
+    }
+    
+    /// Indicates if this is a compound version
+    public var isCompoundVersion: Bool {
+        if case NamedVersion.compound = self { return true }
+        else { return false }
+    }
+    
+    /// Returns an array of all versions stored in this instance.
+    /// If this is a basic version it will create a single version for the array, if this is a single version the array contains one element, else will return all elements in the compound form
     public var versions: [SingleVersion] {
         var rtn: [SingleVersion] = []
         
-        if case NamedVersion.single(let v) = self {
+        if case NamedVersion.basic(let v) = self {
+            rtn.append(SingleVersion(name: v.name, version: Version(v.version)))
+        } else if case NamedVersion.single(let v) = self {
             rtn.append(v)
         } else if case NamedVersion.compound(let ary) = self {
             rtn.append(contentsOf: ary)
@@ -81,34 +111,77 @@ public enum NamedVersion {
         return rtn
     }
     
-    /// If this is a single version, return the SingleVersion object
-    public var singleVersion: SingleVersion? {
-        guard case NamedVersion.single(let v) = self else { return nil }
+    /// This is a basic version, will return BasicVersion object if one exists, or nil
+    public var basicVersion: BasicVersion? {
+        guard case NamedVersion.basic(let v) = self else { return nil }
         return v
     }
     
-    /// Find and returns a version with the matching name
+    /// If this is a single version, return the SingleVersion object
+    /// This will also create and return when its a basic version
+    public var singleVersion: SingleVersion? {
+        if case NamedVersion.basic(let v) = self { return SingleVersion(name: v.name, version: Version(v.version)) }
+        else if case NamedVersion.single(let v) = self { return v }
+        return nil
+    }
+    
+    /// Find and returns the first version with the matching conditions
     ///
-    /// - parameter name: The name of the version to find
+    /// - Parameters:
+    ///   - predicate: A closure that takes a SingleVersion of the named version as its argument and returns a Boolean value indicating whether the element is a match.
     ///
     /// - returns: A single version if one is found, otherwise return nil
-    func getVersion(withName name: String) -> SingleVersion? {
-       
+    func getVersion(where predicate: (SingleVersion) throws -> Bool) rethrows -> SingleVersion? {
+        
         for v in self.versions {
-            if name.compare(v.name, options: .caseInsensitive) == ComparisonResult.orderedSame {
-                return v
-            }
+            if try predicate(v) { return v }
         }
         
         return nil
     }
     
+    
+    /// Find and returns a version with the matching name
+    ///
+    /// - Parameters:
+    ///   - name: The name of the version to find
+    ///   - compareOptions: Options for comparing version name (Default: caseInsensitive)
+    ///   - predicate: A closure that takes a SingleVersion of the named version as its argument and returns a Boolean value indicating whether the element is a match.
+    ///
+    /// - Returns: A single version if one is found, otherwise return nil
+    func getVersion(withName name: String,
+                    compareOptions: String.CompareOptions = .caseInsensitive,
+                    where predicate: (SingleVersion) -> Bool = {_ in return true }) -> SingleVersion? {
+        return self.getVersion {
+            return (name.compare($0.name, options: compareOptions) == ComparisonResult.orderedSame) && predicate($0)
+        }
+    }
+    
+    /// Returns a Boolean value indicating whether the named version contains a version that satisfies the given predicate.
+    /// - Parameters:
+    ///   - predicate: A closure that takes a SingleVersion of the named version as its argument and returns a Boolean value indicating whether the element is a match.
+    ///
+    /// - Returns: true if the name version contains a version that satisfies predicate; otherwise, false.
+    public func contains(where predicate: (SingleVersion) throws -> Bool) rethrows -> Bool {
+        
+        for v in self.versions {
+            if try predicate(v) { return true }
+        }
+        
+        return false
+    }
+    
     /// Checks to see if a version with a specific name exists
-     /// - parameter name: The name of the version to find
-     ///
-     /// - returns: A single version if one is found, otherwise return nil
-    public func contains(versionWithName name: String) -> Bool {
-        return (self.getVersion(withName: name) != nil)
+    /// - Parameters:
+    ///   - name: The name of the version to find
+    ///   - compareOptions: Options for comparing version name (Default: caseInsensitive)
+    ///   - predicate: A closure that takes a SingleVersion of the named version as its argument and returns a Boolean value indicating whether the element is a match.
+    ///
+    /// - Returns: true if the name version contains a version that satisfies the conditions; otherwise, false.
+    public func contains(versionWithName name: String,
+                         compareOptions: String.CompareOptions = .caseInsensitive,
+                         where predicate: (SingleVersion) -> Bool = {_ in return true }) -> Bool {
+        return (self.getVersion(withName: name, compareOptions: compareOptions, where: predicate) != nil)
     }
     
 
@@ -116,11 +189,18 @@ public enum NamedVersion {
     ///
     /// - Parameters:
     ///   - name: he name of the version to find
+    ///   - compareOptions: Options for comparing version name (Default: caseInsensitive)
     ///   - major: The major value to compare to.
-    /// - Returns: true if a version is found otherwise false
-    public func contains(versionWithName name: String, havingMajorVersion major: UInt) -> Bool {
-        guard let p = self.getVersion(withName: name) else { return false }
-        return (p.version.major == major)
+    ///   - predicate: A closure that takes a SingleVersion of the named version as its argument and returns a Boolean value indicating whether the element is a match.
+    ///
+    /// - Returns: true if the name version contains a version that satisfies the conditions; otherwise, false.
+    public func contains(versionWithName name: String,
+                         compareOptions: String.CompareOptions = .caseInsensitive,
+                         havingMajorVersion major: UInt,
+                         where predicate: (SingleVersion) -> Bool = {_ in return true }) -> Bool {
+        return self.contains(versionWithName: name, compareOptions: compareOptions) {
+            return ($0.version.major == major) && predicate($0)
+        }
     }
     
 
@@ -151,9 +231,19 @@ public enum NamedVersion {
 
 // MARK: init
 public extension NamedVersion {
+    /// Creates a new instance of single NamedVersion with a basic version
+    init(_ version: BasicVersion) {
+        self = .basic(version)
+    }
+    
     /// Creates a new instance of single NamedVersion with a single version
     init(_ version: SingleVersion) {
         self = .single(version)
+    }
+    
+    /// Creates a new instance of a single NamedVersion with a the name and version
+    init(name: String, version: Version.SingleVersion) {
+        self.init(BasicVersion(name: name, version: version))
     }
     
     /// Creates a new instance of a single NamedVersion with a the name and version
@@ -198,6 +288,8 @@ extension NamedVersion: CustomStringConvertible {
         var rtn: String = ""
         
         switch(self) {
+        case let .basic(v):
+            rtn = v.description
         case let .single(v):
             rtn = v.description
         case .compound(let ary):
@@ -215,6 +307,8 @@ extension NamedVersion: CustomStringConvertible {
         var rtn: String = ""
         
         switch(self) {
+        case let .basic(v):
+            rtn = v.description
         case let .single(v):
             rtn = v.description
         case .compound(let ary):
@@ -266,12 +360,20 @@ extension NamedVersion: CustomStringConvertible {
                 let sVersion = String(description[rVersion])
                 let ver = Version(groupVersion: sVersion)!
                 
-                
                 versions.append(SingleVersion(name: sName, version: ver))
+                
+                
+                let groupRange = Range<String.Index>(t.range, in: description)!
+                let groupVersion = String(description[groupRange])
+                guard let v = SingleVersion(groupVersion) else { return nil }
+                versions.append(v)
                 
             }
             
-            if versions.count == 1 { self = .single(versions[0]) }
+            if versions.count == 1 && versions[0].version.isSingleVersion {
+                self = .basic(BasicVersion(name: versions[0].name,
+                                           version: versions[0].version.singleVersion!))
+            } else if versions.count == 1 { self = .single(versions[0]) }
             else if versions.count > 1 { self = .compound(versions) }
             else { return nil }
             
@@ -281,6 +383,95 @@ extension NamedVersion: CustomStringConvertible {
         }
     }
     
+}
+
+extension NamedVersion.SingleVersion: CustomStringConvertible {
+    
+     public var description: String { return  self.name + " " + self.version.description }
+    
+    
+    /// Creates an instance initialized to the given string value.
+    public init?(_ description: String) {
+        //Make sure we start with a version pattern
+        //let generalTestPattern: String = NamedVersion.SINGLE_VERSION_REGEX
+        let generalTestPattern: String = NamedVersion.SINGLE_VERSION_REGEX
+        guard description.range(of: "^\(generalTestPattern)$",
+            options: [String.CompareOptions.regularExpression, String.CompareOptions.caseInsensitive]) != nil else {
+                debugPrint("String '\(description)' does not match pattern '^\(generalTestPattern)'")
+                return nil }
+        do {
+            
+            //let pattern: String = "(\(NamedVersion.SINGLE_VERSION_REGEX)( \\+|$))+"
+            let pattern: String = NamedVersion.SINGLE_VERSION_REGEX
+            let regx: NSRegularExpression = try NSRegularExpression(pattern: pattern, options: .caseInsensitive)
+            
+            let r = NSMakeRange(0, description.distance(from: description.startIndex, to: description.endIndex))
+            
+            let textResults = regx.matches(in: description, range: r)
+            guard textResults.count == 0 else { return nil }
+            let t = textResults.first!
+            
+            let rName = Range<String.Index>(t.range(at: NamedVersion.NAME_VALUE_RANGE_INDEX), in: description)!
+            let sName = String(description[rName])
+            //print(sName)
+            let rVersion = Range<String.Index>(t.range(at: NamedVersion.VERSION_VALUE_RANGE_INDEX), in: description)!
+            let sVersion = String(description[rVersion])
+            guard let ver = Version(groupVersion: sVersion) else { return nil }
+            
+            
+            self.init(name: sName, version: ver)
+            
+            
+        } catch {
+            debugPrint(error)
+            return nil
+        }
+    }
+    
+}
+
+extension NamedVersion.BasicVersion: CustomStringConvertible {
+    
+    public var description: String { return  self.name + " " + self.version.description }
+    
+    
+    /// Creates an instance initialized to the given string value.
+    public init?(_ description: String) {
+        //Make sure we start with a version pattern
+        //let generalTestPattern: String = NamedVersion.SINGLE_VERSION_REGEX
+        let generalTestPattern: String = "^\(NamedVersion.SINGLE_VERSION_BASIC_REGEX)$"
+        guard description.range(of: generalTestPattern,
+            options: [String.CompareOptions.regularExpression, String.CompareOptions.caseInsensitive]) != nil else {
+                debugPrint("String '\(description)' does not match pattern '\(generalTestPattern)'")
+                return nil }
+        do {
+            
+            //let pattern: String = "(\(NamedVersion.SINGLE_VERSION_REGEX)( \\+|$))+"
+            let pattern: String = generalTestPattern
+            let regx: NSRegularExpression = try NSRegularExpression(pattern: pattern, options: .caseInsensitive)
+            
+            let r = NSMakeRange(0, description.distance(from: description.startIndex, to: description.endIndex))
+            
+            let textResults = regx.matches(in: description, range: r)
+            guard textResults.count == 1 else { return nil }
+            let t = textResults.first!
+            
+            let rName = Range<String.Index>(t.range(at: NamedVersion.NAME_VALUE_RANGE_INDEX), in: description)!
+            let sName = String(description[rName])
+            //print(sName)
+            let rVersion = Range<String.Index>(t.range(at: NamedVersion.VERSION_VALUE_RANGE_INDEX), in: description)!
+            let sVersion = String(description[rVersion])
+            guard let ver = Version.SingleVersion(groupVersion: sVersion) else { return nil }
+            
+            
+            self.init(name: sName, version: ver)
+            
+            
+        } catch {
+            debugPrint(error)
+            return nil
+        }
+    }
     
 }
 
@@ -313,6 +504,40 @@ extension NamedVersion: ExpressibleByStringLiteral {
     }
     
 }
+extension NamedVersion.SingleVersion: ExpressibleByStringLiteral {
+    public init(stringLiteral value: String) {
+       
+        guard let s = NamedVersion.SingleVersion(value) else {
+            preconditionFailure("Invalid format '\(value)'")
+        }
+        self = s
+        
+    }
+    public init(unicodeScalarLiteral value: String) {
+        self.init(stringLiteral: value)
+    }
+    public init(extendedGraphemeClusterLiteral value: String) {
+        
+        self.init(stringLiteral: value)
+    }
+    
+}
+extension NamedVersion.BasicVersion: ExpressibleByStringLiteral {
+    public init(stringLiteral value: String) {
+        guard let s = NamedVersion.BasicVersion(value) else {
+            preconditionFailure("Invalid format '\(value)'")
+        }
+        self = s
+        
+    }
+    public init(unicodeScalarLiteral value: String) {
+        self.init(stringLiteral: value)
+    }
+    public init(extendedGraphemeClusterLiteral value: String) {
+        self.init(stringLiteral: value)
+    }
+    
+}
 
 
 // MARK: Comparable
@@ -333,7 +558,7 @@ extension NamedVersion: Comparable {
     }
 }
 
-//MARK: Comparable
+
 extension NamedVersion.SingleVersion: Comparable {
     public static func ==(lhs: NamedVersion.SingleVersion, rhs: NamedVersion.SingleVersion) -> Bool {
         guard lhs.name == rhs.name && lhs.version == rhs.version else { return false }
@@ -347,9 +572,22 @@ extension NamedVersion.SingleVersion: Comparable {
     }
 }
 
-//MARK: CustomStringConvertible
-extension NamedVersion.SingleVersion: CustomStringConvertible {
-     public var description: String { return  name + " " + version.description }
+extension NamedVersion.BasicVersion: Comparable {
+    public static func ==(lhs: NamedVersion.BasicVersion, rhs: NamedVersion.BasicVersion) -> Bool {
+        guard lhs.name == rhs.name && lhs.version == rhs.version else { return false }
+        return true
+    }
+    public static func < (lhs: NamedVersion.BasicVersion, rhs: NamedVersion.BasicVersion) -> Bool {
+        if lhs.name < rhs.name { return true }
+        else if lhs.name > rhs.name { return false }
+        else if lhs.version < rhs.version { return true }
+        else { return false }
+    }
+    
+    public static func ~=(lhs: NamedVersion.BasicVersion, rhs: NamedVersion.BasicVersion) -> Bool {
+        guard lhs.name.compare(rhs.name, options: .caseInsensitive) == .orderedSame else { return false }
+        return lhs.version ~= rhs.version
+    }
 }
 
 
