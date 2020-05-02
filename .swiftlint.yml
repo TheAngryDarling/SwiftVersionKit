@@ -1,0 +1,10 @@
+disabled_rules: # rule identifiers to exclude from running
+  - switch_case_alignment
+  - statement_position
+  - file_length
+  - redundant_optional_initialization
+  - operator_whitespace
+  - function_body_length
+  
+excluded: # paths to ignore during linting. Takes precedence over `included`.
+  - Tests
