@@ -585,6 +585,60 @@ extension NamedVersion.BasicVersion: Comparable {
     }
 }
 
+extension NamedVersion.BasicVersion: Codable {
+    public enum CodingErrors: Swift.Error {
+        case invalidVersion(String)
+    }
+    public init(from decoder: Decoder) throws {
+        let container = try decoder.singleValueContainer()
+        let stringVersion = try container.decode(String.self)
+        guard let newVersion = NamedVersion.BasicVersion(stringVersion) else {
+            throw CodingErrors.invalidVersion(stringVersion)
+        }
+        self = newVersion
+    }
+    public func encode(to encoder: Encoder) throws {
+        var container = encoder.singleValueContainer()
+        try container.encode(self.description)
+    }
+}
+
+extension NamedVersion.SingleVersion: Codable {
+    public enum CodingErrors: Swift.Error {
+        case invalidVersion(String)
+    }
+    public init(from decoder: Decoder) throws {
+        let container = try decoder.singleValueContainer()
+        let stringVersion = try container.decode(String.self)
+        guard let newVersion = NamedVersion.SingleVersion(stringVersion) else {
+            throw CodingErrors.invalidVersion(stringVersion)
+        }
+        self = newVersion
+    }
+    public func encode(to encoder: Encoder) throws {
+        var container = encoder.singleValueContainer()
+        try container.encode(self.description)
+    }
+}
+
+extension NamedVersion: Codable {
+    public enum CodingErrors: Swift.Error {
+        case invalidVersion(String)
+    }
+    public init(from decoder: Decoder) throws {
+        let container = try decoder.singleValueContainer()
+        let stringVersion = try container.decode(String.self)
+        guard let newVersion = NamedVersion(stringVersion) else {
+            throw CodingErrors.invalidVersion(stringVersion)
+        }
+        self = newVersion
+    }
+    public func encode(to encoder: Encoder) throws {
+        var container = encoder.singleValueContainer()
+        try container.encode(self.description)
+    }
+}
+
 // MARK: Operators
 public func +(lhs: NamedVersion, rhs: NamedVersion) -> NamedVersion {
     var rtnAry: [NamedVersion.SingleVersion] = lhs.versions

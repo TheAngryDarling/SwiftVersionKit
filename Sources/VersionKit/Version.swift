@@ -347,7 +347,7 @@ extension Version.SingleVersion: Comparable {
             lhs.prerelease == rhs.prerelease &&
             lhs.build == rhs.build)
     }
-
+    // swiftlint:disable:next cyclomatic_complexity
     public static func <(lhs: Version.SingleVersion, rhs: Version.SingleVersion) -> Bool {
         if lhs.major < rhs.major { return true }
         else if lhs.major > rhs.major { return false }
@@ -490,6 +490,42 @@ extension Version.SingleVersion: LosslessStringConvertible, ExpressibleByStringL
         for bld in self.build { rtn += "+" + bld }
         //if let b = self.build { rtn += "-\(b)" }
         return rtn
+    }
+}
+
+extension Version.SingleVersion: Codable {
+    public enum CodingErrors: Swift.Error {
+        case invalidVersion(String)
+    }
+    public init(from decoder: Decoder) throws {
+        let container = try decoder.singleValueContainer()
+        let stringVersion = try container.decode(String.self)
+        guard let newVersion = Version.SingleVersion(stringVersion) else {
+            throw CodingErrors.invalidVersion(stringVersion)
+        }
+        self = newVersion
+    }
+    public func encode(to encoder: Encoder) throws {
+        var container = encoder.singleValueContainer()
+        try container.encode(self.description)
+    }
+}
+
+extension Version: Codable {
+    public enum CodingErrors: Swift.Error {
+        case invalidVersion(String)
+    }
+    public init(from decoder: Decoder) throws {
+        let container = try decoder.singleValueContainer()
+        let stringVersion = try container.decode(String.self)
+        guard let newVersion = Version(stringVersion) else {
+            throw CodingErrors.invalidVersion(stringVersion)
+        }
+        self = newVersion
+    }
+    public func encode(to encoder: Encoder) throws {
+        var container = encoder.singleValueContainer()
+        try container.encode(self.description)
     }
 }
 

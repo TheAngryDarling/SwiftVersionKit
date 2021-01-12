@@ -1,5 +1,6 @@
 import XCTest
 @testable import VersionKit
+import UnitTestingHelper
 
 final class VersionKitTests: XCTestCase {
 
@@ -13,6 +14,14 @@ final class VersionKitTests: XCTestCase {
     }()
 
     let printResults = VersionKitTests.VERBOSE
+    
+    let encoder = JSONEncoder()
+    let decoder = JSONDecoder()
+    
+    struct EncodableValue<T>: Codable where T: Codable {
+        let value: T
+        public init(_ value: T) { self.value = value }
+    }
 
     func testVersions() {
         let versions: [String] = ["1.0","1.0-R12A","1.0.1","1.0.1-R12A","1.0.1-R12A-ABCD+ASDF+RX2A"]
@@ -48,9 +57,15 @@ final class VersionKitTests: XCTestCase {
                 continue
             }
             builtVersions.append(ef)
-            XCTAssert(ef.description == v, "Improper parsing of format '\(v)' to '\(ef.description)'")
+            
             if printResults { print("\t" + v + " ------ " + ef.description) }
-
+            if XCTAssertsEqual(v, ef.description, "Improper parsing of format '\(v)' to '\(ef.description)'") {
+                if let data = XCTAssertsNoThrow(try encoder.encode(EncodableValue(ef))) {
+                    if let newEf = XCTAssertsNoThrow(try decoder.decode(EncodableValue<Version>.self, from: data)) {
+                        XCTAssertEqual(ef, newEf.value, "Improper parsing decodeing.  Expected: '\(ef)', found: '\(newEf)'")
+                    }
+                }
+            }
         }
 
         builtVersions.sort()
@@ -81,8 +96,16 @@ final class VersionKitTests: XCTestCase {
                 XCTFail("Failed to parse version '\(v)'")
                 continue
             }
-            XCTAssert(ef.description == v, "Improper parsing of format '\(v)' to '\(ef.description)'")
             if printResults { print("\t" + v + " ------ " + ef.description) }
+            if XCTAssertsEqual(v, ef.description, "Improper parsing of format '\(v)' to '\(ef.description)'") {
+                if let data = XCTAssertsNoThrow(try encoder.encode(EncodableValue(ef))) {
+                    if let newEf = XCTAssertsNoThrow(try decoder.decode(EncodableValue<NamedVersion>.self, from: data)) {
+                        XCTAssertEqual(ef, newEf.value, "Improper parsing decodeing.  Expected: '\(ef)', found: '\(newEf)'")
+                    }
+                }
+            }
+            
+            
 
         }
 
