@@ -22,9 +22,66 @@ final class VersionKitTests: XCTestCase {
         let value: T
         public init(_ value: T) { self.value = value }
     }
+    
+    let major: UInt = 1
+    let minor: UInt = 2
+    let revision: UInt = 3
+    let buildNumber: UInt = 1234
+    let prerelease: [String] = ["R12A", "ABCD"]
+    let build: [String] = ["ASDF", "RX2A"]
+    
+    func generateVersionStrings(includeMajorOnly: Bool = false) -> [String] {
+        
+        
+        let verMajor = "\(major)"
+        let verMajorMinor = "\(verMajor).\(minor)"
+        let verMajorMinorRev = "\(verMajorMinor).\(revision)"
+        let verMajorMinorRevBuildNumber = "\(verMajorMinorRev).\(buildNumber)"
+        
+        
+        
+        var rtn: [String] = []
+        
+        var verBase: [String] = [verMajorMinor, verMajorMinorRev, verMajorMinorRevBuildNumber]
+        if includeMajorOnly {
+            verBase.insert(verMajor, at: 0)
+        }
+        
+        for base in verBase {
+            rtn.append(base)
+            for i in 0..<prerelease.count {
+                var workingVer = base
+                for x in 0...i {
+                    workingVer += "-" + prerelease[x]
+                }
+                
+                rtn.append(workingVer)
+                
+                for z in 0..<build.count {
+                    var workingVer2 = workingVer
+                    for x in 0...z {
+                        workingVer2 += "+" + build[x]
+                    }
+                    rtn.append(workingVer2)
+                }
+                
+            }
+        }
+        
+        
+        return rtn
+    }
+    
+    func testBuildVersions() {
+        let versions = generateVersionStrings()
+        for ver in versions {
+            print(ver)
+        }
+    }
 
     func testVersions() {
-        let versions: [String] = ["1.0","1.0-R12A","1.0.1","1.0.1-R12A","1.0.1-R12A-ABCD+ASDF+RX2A"]
+        //let versions: [String] = ["1.0","1.0-R12A","1.0.1","1.0.1-R12A","1.0.1-R12A-ABCD+ASDF+RX2A"]
+        let versions: [String] = generateVersionStrings()
         if printResults { print("Testing single version format") }
         for (_, v) in versions.enumerated() {
 
@@ -76,7 +133,8 @@ final class VersionKitTests: XCTestCase {
     }
 
     func testNamedVersions() {
-        let versionsNumbers: [String] = ["9","1.0","1.0.1","1.0-R12A","1.0.1+R12A"]
+        //let versionsNumbers: [String] = ["9","1.0","1.0.1","1.0-R12A","1.0.1+R12A"]
+        let versionsNumbers =  generateVersionStrings(includeMajorOnly: true)
         let names: [String] = ["ProgramA", "Lib B", "APP124", "Program A B"]
 
         let versions: [String] = {
@@ -144,7 +202,9 @@ final class VersionKitTests: XCTestCase {
 
     func testVersionSorting() {
         do {
-            let versions: [String] = ["1.0","1.0-R12A","1.0.1","1.0.1-R12A","1.0.1-R12A-ABCD+ASDF+RX2A"]
+            //let versions: [String] = ["1.0","1.0-R12A","1.0.1","1.0.1-R12A","1.0.1-R12A-ABCD+ASDF+RX2A"]
+            let versions = generateVersionStrings()
+            
             if printResults { print("Testing version sorting") }
             for i in 1..<versions.count {
                 guard let v1 = Version(versions[i-1]) else {

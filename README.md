@@ -10,6 +10,7 @@ Single Version Fields:
 * Major: UInt
 * Minor: UInt <- Optional on Named Versions
 * Revision: UInt <- Optional
+* BuildNumber: UInt <- Optional
 * Prerelease: [String] <- Optional (- Separator)
 * Build: [String] <- Optional (+ Separator)
 
@@ -17,7 +18,7 @@ Single Version Fields:
 
 ```Swift
 
-//Version String Format: {Major}.{Minor}.{Revision}-{Prerelease}+{Build}
+//Version String Format: {Major}.{Minor}.{Revision}.{BuildNumber}-{Prerelease}+{Build}
 //Create simple versions
 let versionBasic: Version = "1.0"
 let vesionNormal: Version = "1.0.0"

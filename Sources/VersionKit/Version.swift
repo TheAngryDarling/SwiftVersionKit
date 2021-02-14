@@ -17,16 +17,37 @@ public enum Version {
         public let major: UInt
         public let minor: UInt!
         public let revision: UInt?
+        public let buildNumber: UInt?
         public let prerelease: [String]
         public let build: [String]
+        
+        public init(major: UInt,
+                    minor: UInt!,
+                    revision: UInt?,
+                    buildNumber: UInt? = nil,
+                    prerelease: [String],
+                    build: [String]) {
+            
+            var rev = revision
+            if rev == nil && buildNumber != nil {
+                rev = 0
+            }
+            
+            self.major = major
+            self.minor = minor
+            self.revision = rev
+            self.buildNumber = buildNumber
+            self.prerelease = prerelease
+            self.build = build
+        }
     }
 
     /// Regular Expression for checking for a single version
-    public static let SINGLE_VERSION_REGEX: String = "(v|version |)(\\d+)\\.(\\d+)(?:\\.(\\d+))?((\\-\\w+)+)?((\\+\\w+)+)?"
+    public static let SINGLE_VERSION_REGEX: String = "(v|version |)(\\d+)\\.(\\d+)(?:\\.(\\d+)(?:\\.(\\d+))?)?((\\-\\w+)+)?((\\+\\w+)+)?"
     // swiftlint:disable:previous identifier_name line_length
 
     /// Regular Expression for checking for a single version with optional minor value
-    internal static let SINGLE_VERSION_OPTIONAL_MINOR_REGEX: String = "(v|version |)(\\d+)(?:\\.(\\d+))?(?:\\.(\\d+))?((\\-\\w+)+)?((\\+\\w+)+)?"
+    internal static let SINGLE_VERSION_OPTIONAL_MINOR_REGEX: String = "(v|version |)(\\d+)(?:\\.(\\d+))?(?:\\.(\\d+)(?:\\.(\\d+))?)?((\\-\\w+)+)?((\\+\\w+)+)?"
     // swiftlint:disable:previous identifier_name line_length
 
     /// Regular Expression for checking for compound versions
@@ -40,8 +61,9 @@ public enum Version {
     private static let MAJOR_VALUE_RANGE_INDEX: Int = 2 // swiftlint:disable:this identifier_name
     private static let MINOR_VALUE_RANGE_INDEX: Int = 3 // swiftlint:disable:this identifier_name
     private static let REVISION_VALUE_RANGE_INDEX: Int = 4 // swiftlint:disable:this identifier_name
-    private static let PRE_RELEASE_VALUE_RANGE_INDEX: Int = 5 // swiftlint:disable:this identifier_name
-    private static let BUILD_VALUE_RANGE_INDEX: Int = 7 // swiftlint:disable:this identifier_name
+    private static let BUILD_NUMBER_VALUE_RANGE_INDEX: Int = 5 // swiftlint:disable:this identifier_name
+    private static let PRE_RELEASE_VALUE_RANGE_INDEX: Int = 6 // swiftlint:disable:this identifier_name
+    private static let BUILD_VALUE_RANGE_INDEX: Int = 8 // swiftlint:disable:this identifier_name
 
     /// Single instance of version
     case single(SingleVersion)
@@ -101,12 +123,32 @@ public extension Version {
         self = .single(version)
     }
     /// Creates a new instance of a single Version with the version information
-    init(major: UInt, minor: UInt, revision: UInt? = nil, prerelease: [String] = [], build: [String] = []) {
-        self.init(SingleVersion(major: major, minor: minor, revision: revision, prerelease: prerelease, build: build))
+    init(major: UInt,
+         minor: UInt,
+         revision: UInt? = nil,
+         buildNumber: UInt? = nil,
+         prerelease: [String] = [],
+         build: [String] = []) {
+        self.init(SingleVersion(major: major,
+                                minor: minor,
+                                revision: revision,
+                                buildNumber: buildNumber,
+                                prerelease: prerelease,
+                                build: build))
     }
     /// Creates a new instance of a single Version with the version information
-    internal init(major: UInt, minor: UInt?, revision: UInt? = nil, prerelease: [String] = [], build: [String] = []) {
-        self.init(SingleVersion(major: major, minor: minor, revision: revision, prerelease: prerelease, build: build))
+    internal init(major: UInt,
+                  minor: UInt?,
+                  revision: UInt? = nil,
+                  buildNumber: UInt? = nil,
+                  prerelease: [String] = [],
+                  build: [String] = []) {
+        self.init(SingleVersion(major: major,
+                                minor: minor,
+                                revision: revision,
+                                buildNumber: buildNumber,
+                                prerelease: prerelease,
+                                build: build))
     }
     /// Creates a new instane of a compound Version with the versions provided
     init(_ versions: [SingleVersion]) {
@@ -162,6 +204,7 @@ extension Version: LosslessStringConvertible {
                 var iMajor: UInt = 0
                 var iMinor: UInt? = nil
                 var iRevision: UInt? = nil
+                var iBuildNumber: UInt? = nil
                 var saPrerelease: [String] = []
                 var saBuild: [String] = []
                 //var sBuild: String? = nil
@@ -181,6 +224,12 @@ extension Version: LosslessStringConvertible {
                                                         in: versionString)!
                     iRevision = UInt(versionString[rRevision])
                 }
+                
+                if tResults.range(at: Version.BUILD_NUMBER_VALUE_RANGE_INDEX).length > 0 {
+                    let rBuildNumber = Range<String.Index>(tResults.range(at: Version.BUILD_NUMBER_VALUE_RANGE_INDEX),
+                                                        in: versionString)!
+                    iBuildNumber = UInt(versionString[rBuildNumber])
+                }
 
                 if tResults.range(at: Version.PRE_RELEASE_VALUE_RANGE_INDEX).length > 0 {
                     let rBuild = Range<String.Index>(tResults.range(at: Version.PRE_RELEASE_VALUE_RANGE_INDEX),
@@ -197,6 +246,7 @@ extension Version: LosslessStringConvertible {
                 versions.append(SingleVersion(major: iMajor,
                                               minor: iMinor,
                                               revision: iRevision,
+                                              buildNumber: iBuildNumber,
                                               prerelease: saPrerelease,
                                               build: saBuild))
 
@@ -344,6 +394,7 @@ extension Version.SingleVersion: Comparable {
         return (lhs.major == rhs.major &&
             lhs.minor == rhs.minor &&
             lhs.revision == rhs.revision &&
+            lhs.buildNumber == rhs.buildNumber &&
             lhs.prerelease == rhs.prerelease &&
             lhs.build == rhs.build)
     }
@@ -365,6 +416,13 @@ extension Version.SingleVersion: Comparable {
         }
         else if lhs.revision == nil && rhs.revision != nil { return true }
         else if lhs.revision != nil && rhs.revision == nil { return false }
+        
+        if let lhsBN = lhs.buildNumber, let rhsBN = rhs.buildNumber {
+            if lhsBN < rhsBN { return true }
+            else if lhsBN < rhsBN { return false }
+        }
+        else if lhs.buildNumber == nil && rhs.buildNumber != nil { return true }
+        else if lhs.buildNumber != nil && rhs.buildNumber == nil { return false }
 
         let lhsP = lhs.prerelease.reduce("", +)
         let rhsP = rhs.prerelease.reduce("", +)
@@ -380,10 +438,9 @@ extension Version.SingleVersion: Comparable {
 
     public static func ~=(lhs: Version.SingleVersion, rhs: Version.SingleVersion) -> Bool {
         return (lhs.major == rhs.major &&
-               ((lhs.minor == rhs.minor) ||
-                (lhs.minor == 0 && rhs.minor == nil) ||
-                (lhs.minor == nil && rhs.minor == 0)) &&
-               lhs.revision == rhs.revision &&
+               (lhs.minor ?? 0) == (rhs.minor ?? 0) &&
+               (lhs.revision ?? 0) == (rhs.revision ?? 0) &&
+               (lhs.buildNumber ?? 0) == (rhs.buildNumber ?? 0) &&
                lhs.prerelease == rhs.prerelease &&
                lhs.build == rhs.build)
     }
@@ -413,6 +470,7 @@ extension Version.SingleVersion: LosslessStringConvertible, ExpressibleByStringL
             var iMajor: UInt = 0
             var iMinor: UInt? = nil
             var iRevision: UInt? = nil
+            var iBuildNumber: UInt? = nil
             var saPrerelease: [String] = []
             var saBuild: [String] = []
             //var sBuild: String? = nil
@@ -432,6 +490,14 @@ extension Version.SingleVersion: LosslessStringConvertible, ExpressibleByStringL
                                                     in: versionString)!
                 iRevision = UInt(versionString[rRevision])
             }
+            
+            if tResults.range(at: Version.BUILD_NUMBER_VALUE_RANGE_INDEX).length > 0 {
+                let rBuildNumber = Range<String.Index>(tResults.range(at: Version.BUILD_NUMBER_VALUE_RANGE_INDEX),
+                                                    in: versionString)!
+                iBuildNumber = UInt(versionString[rBuildNumber])
+            }
+            
+            
 
             if tResults.range(at: Version.PRE_RELEASE_VALUE_RANGE_INDEX).length > 0 {
                 let rBuild = Range<String.Index>(tResults.range(at: Version.PRE_RELEASE_VALUE_RANGE_INDEX),
@@ -448,6 +514,7 @@ extension Version.SingleVersion: LosslessStringConvertible, ExpressibleByStringL
             self.init(major: iMajor,
                       minor: iMinor,
                       revision: iRevision,
+                      buildNumber: iBuildNumber,
                       prerelease: saPrerelease,
                       build: saBuild)
 
@@ -486,6 +553,7 @@ extension Version.SingleVersion: LosslessStringConvertible, ExpressibleByStringL
         var rtn: String = "\(self.major)"
         if let min = self.minor { rtn += ".\(min)" }
         if let rev = self.revision, rev > 0 { rtn += ".\(rev)" }
+        if let bn = self.buildNumber, bn > 0 { rtn += ".\(bn)" }
         for pre in self.prerelease { rtn += "-" + pre }
         for bld in self.build { rtn += "+" + bld }
         //if let b = self.build { rtn += "-\(b)" }
