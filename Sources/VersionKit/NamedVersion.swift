@@ -269,12 +269,14 @@ public extension NamedVersion {
          major: UInt,
          minor: UInt? = nil,
          revision: UInt? = nil,
+         buildNumber: UInt? = nil,
          prerelease: [String] = [],
          build: [String] = []) {
         self.init(name: name,
                   version: Version(major: major,
                                    minor: minor,
                                    revision: revision,
+                                   buildNumber: buildNumber,
                                    prerelease: prerelease,
                                    build: build))
     }

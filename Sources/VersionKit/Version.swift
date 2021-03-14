@@ -111,6 +111,7 @@ public enum Version {
     public var major: UInt? { return self.singleVersion?.major }
     public var minor: UInt? { return self.singleVersion?.minor }
     public var revision: UInt? { return self.singleVersion?.revision }
+    public var buildNumber: UInt? { return self.singleVersion?.buildNumber }
     public var prerelease: [String]? { return self.singleVersion?.prerelease }
     public var build: [String]? { return self.singleVersion?.build }
 
