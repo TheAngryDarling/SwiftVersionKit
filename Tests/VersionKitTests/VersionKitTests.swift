@@ -72,16 +72,19 @@ final class VersionKitTests: XCTestCase {
         return rtn
     }
     
+    lazy var genVersionStrings: [String] = self.generateVersionStrings()
+    lazy var genVersionMajorOnlyStrings: [String] = self.generateVersionStrings(includeMajorOnly: true)
+    
     func testBuildVersions() {
-        let versions = generateVersionStrings()
+        let versions = genVersionStrings
         for ver in versions {
-            print(ver)
+            if printResults { print(ver) }
         }
     }
 
     func testVersions() {
         //let versions: [String] = ["1.0","1.0-R12A","1.0.1","1.0.1-R12A","1.0.1-R12A-ABCD+ASDF+RX2A"]
-        let versions: [String] = generateVersionStrings()
+        let versions: [String] = genVersionStrings
         if printResults { print("Testing single version format") }
         for (_, v) in versions.enumerated() {
 
@@ -126,7 +129,7 @@ final class VersionKitTests: XCTestCase {
         }
 
         builtVersions.sort()
-         if printResults { print("\nSorted Versions") }
+        if printResults { print("\nSorted Versions") }
         for v in builtVersions {
             if printResults { print("\t" + v.description) }
         }
@@ -134,10 +137,19 @@ final class VersionKitTests: XCTestCase {
 
     func testNamedVersions() {
         //let versionsNumbers: [String] = ["9","1.0","1.0.1","1.0-R12A","1.0.1+R12A"]
-        let versionsNumbers =  generateVersionStrings(includeMajorOnly: true)
+        let versionsNumbers =  genVersionMajorOnlyStrings
         let names: [String] = ["ProgramA", "Lib B", "APP124", "Program A B"]
 
-        let versions: [String] = {
+        
+        let versions: [String] = versionsNumbers.flatMap { numbVer in
+            return names.map { name in
+                return name + " " + numbVer
+            }
+        }
+        /*
+        print("Versions New Count: \(versions.count)")
+        
+        let versions2: [String] = {
             var rtn: [String] = []
             for n in names {
                 for v in versionsNumbers {
@@ -146,7 +158,8 @@ final class VersionKitTests: XCTestCase {
             }
             return rtn
         }()
-
+        print("Versions Old Count: \(versions2.count)")
+         */
         if printResults { print("Testing single named version format") }
         for (_, v) in versions.enumerated() {
             //if i > 0 { break }
@@ -166,8 +179,18 @@ final class VersionKitTests: XCTestCase {
             
 
         }
+        
+        let multiVersions: [String] = versions.enumerated().map {
+            guard ($0.offset + 1) < (versions.count - 1) else {
+                return $0.element
+            }
+            
+            return $0.element + " + " + versions[($0.offset+1)...].joined(separator: " + ")
+        }
+        /*
+        print("MultiVersions New Count: \(multiVersions.count)")
 
-        let multiVersions: [String] = {
+        let multiVersions2: [String] = {
             var rtn: [String] = []
 
             for i in 0..<versions.count-1 {
@@ -178,7 +201,12 @@ final class VersionKitTests: XCTestCase {
 
             return rtn
         }()
-
+        
+        print("MultiVersions New Count: \(multiVersions2.count)")
+        
+        print(multiVersions)
+        print(multiVersions2)
+         */
         var builtVersions: [NamedVersion] = []
         if printResults { print("\nTesting multi named version format") }
         for (_, v) in multiVersions.enumerated() {
@@ -203,7 +231,7 @@ final class VersionKitTests: XCTestCase {
     func testVersionSorting() {
         do {
             //let versions: [String] = ["1.0","1.0-R12A","1.0.1","1.0.1-R12A","1.0.1-R12A-ABCD+ASDF+RX2A"]
-            let versions = generateVersionStrings()
+            let versions = genVersionStrings
             
             if printResults { print("Testing version sorting") }
             for i in 1..<versions.count {
@@ -269,11 +297,53 @@ final class VersionKitTests: XCTestCase {
             }
         }
     }
+    
+    func testSingleVersionComparison() {
+        let extraSmall = Version.SingleVersion(major: 0, minor: 0, revision: 1)
+        let small = Version.SingleVersion(major: 1, minor: 0, revision: 0)
+        let middleLow = Version.SingleVersion(major: 1, minor: 0, revision: 9)
+        let middleHigh = Version.SingleVersion(major: 1, minor: 9, revision: 0)
+        let large = Version.SingleVersion(major: 1, minor: 9, revision: 9)
+        let extraLarge = Version.SingleVersion(major: 2, minor: 0, revision: 0)
+        
+        XCTAssertTrue(extraSmall < small)
+        XCTAssertTrue(extraSmall <= small)
+        
+        XCTAssertTrue(small > extraSmall)
+        XCTAssertTrue(small >= extraSmall)
+        
+        XCTAssertTrue(small < middleLow)
+        XCTAssertTrue(small <= middleLow)
+        
+        XCTAssertTrue(middleLow > small)
+        XCTAssertTrue(middleLow >= small)
+        
+        XCTAssertTrue(middleLow < middleHigh)
+        XCTAssertTrue(middleLow <= middleHigh)
+        
+        XCTAssertTrue(middleHigh > middleLow)
+        XCTAssertTrue(middleHigh >= middleLow)
+        
+        XCTAssertTrue(middleHigh < large)
+        XCTAssertTrue(middleHigh <= large)
+        
+        XCTAssertTrue(large > middleHigh)
+        XCTAssertTrue(large >= middleHigh)
+        
+        XCTAssertTrue(large < extraLarge)
+        XCTAssertTrue(large <= extraLarge)
+        
+        XCTAssertTrue(extraLarge > large)
+        XCTAssertTrue(extraLarge >= large)
+        
+        
+    }
 
     static var allTests = [
         ("testVersions", testVersions),
         ("testNamedVersions",testNamedVersions),
         ("testVersionSorting", testVersionSorting),
-        ("testBasicNamedVersions", testBasicNamedVersions)
+        ("testBasicNamedVersions", testBasicNamedVersions),
+        ("testSingleVersionComparison", testSingleVersionComparison)
     ]
 }

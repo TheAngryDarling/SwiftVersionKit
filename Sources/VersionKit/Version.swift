@@ -25,8 +25,8 @@ public enum Version {
                     minor: UInt!,
                     revision: UInt?,
                     buildNumber: UInt? = nil,
-                    prerelease: [String],
-                    build: [String]) {
+                    prerelease: [String] = [],
+                    build: [String] = []) {
             
             var rev = revision
             if rev == nil && buildNumber != nil {
@@ -406,21 +406,21 @@ extension Version.SingleVersion: Comparable {
 
         if let lhsR = lhs.minor, let rhsR = rhs.minor {
             if lhsR < rhsR { return true }
-            else if lhsR < rhsR { return false }
+            else if lhsR > rhsR { return false }
         }
         else if lhs.minor == nil && rhs.minor != nil { return true }
         else if lhs.minor != nil && rhs.minor == nil { return false }
 
         if let lhsR = lhs.revision, let rhsR = rhs.revision {
             if lhsR < rhsR { return true }
-            else if lhsR < rhsR { return false }
+            else if lhsR > rhsR { return false }
         }
         else if lhs.revision == nil && rhs.revision != nil { return true }
         else if lhs.revision != nil && rhs.revision == nil { return false }
         
         if let lhsBN = lhs.buildNumber, let rhsBN = rhs.buildNumber {
             if lhsBN < rhsBN { return true }
-            else if lhsBN < rhsBN { return false }
+            else if lhsBN > rhsBN { return false }
         }
         else if lhs.buildNumber == nil && rhs.buildNumber != nil { return true }
         else if lhs.buildNumber != nil && rhs.buildNumber == nil { return false }
